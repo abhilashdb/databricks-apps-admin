@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, Play, RefreshCw, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
+import { ExternalLink, RefreshCw, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import {
   Button, Card, CardContent, CardHeader, CardTitle,
 } from '@databricks/appkit-ui/react';
@@ -81,7 +81,6 @@ export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCou
 }) {
   const [apps, setApps]               = useState<AppInfo[]>([]);
   const [loading, setLoading]         = useState(true);
-  const [runningJob, setRunningJob]   = useState(false);
   const [editApp, setEditApp]         = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -103,18 +102,6 @@ export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCou
   const scheduleMap = Object.fromEntries(schedule.map(s => [s.app_name, s]));
   const stopMap     = Object.fromEntries(stopsLast24h.map(s => [s.app_name, Number(s.stop_count)]));
 
-  const runMonitor = async (dryRun: boolean) => {
-    setRunningJob(true);
-    try {
-      const { runId } = await trpc.runMonitor.mutate({ dryRun });
-      alert(`Monitor job triggered (run ID: ${runId}). Check job runs for output.`);
-    } catch (e: unknown) {
-      alert(`Failed to trigger job: ${(e as Error).message}`);
-    } finally {
-      setRunningJob(false);
-    }
-  };
-
   const editingSchedule = editApp ? scheduleMap[editApp] : null;
 
   return (
@@ -126,16 +113,10 @@ export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCou
             {apps.length} app{apps.length !== 1 ? 's' : ''} · refreshed {lastRefresh.toLocaleTimeString()}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={fetchApps} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={() => runMonitor(false)} disabled={runningJob}>
-            <Play className="h-4 w-4 mr-1.5" />
-            {runningJob ? 'Triggering…' : 'Run Monitor Now'}
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={fetchApps} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Telemetry missing banner */}
