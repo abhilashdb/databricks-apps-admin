@@ -44,7 +44,7 @@ function Layout() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b px-4 md:px-6 py-3 flex items-center gap-4">
         <Activity className="h-5 w-5 text-primary flex-shrink-0" />
-        <span className="text-lg font-semibold text-foreground">Scale-to-Zero Admin</span>
+        <span className="text-lg font-semibold text-foreground">Databricks Apps Admin</span>
         <NavLinks linkClass={navCls} />
         <div className="ml-auto md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
@@ -81,12 +81,20 @@ type ScheduleRow = {
   force_stop_hour: number; notes: string; updated_at: string;
 };
 
+type StopRow = { app_name: string; stop_count: number };
+
 function DashboardWrapper() {
-  const { data, loading } = useAnalyticsQuery('app_schedule', {});
-  if (loading) {
+  const { data: schedule, loading: schedLoading } = useAnalyticsQuery('app_schedule', {});
+  const { data: stops }                            = useAnalyticsQuery('stops_last_24h', {});
+  if (schedLoading) {
     return <div className="text-center text-muted-foreground py-16">Loading schedule…</div>;
   }
-  return <DashboardPage schedule={(data ?? []) as ScheduleRow[]} />;
+  return (
+    <DashboardPage
+      schedule={(schedule ?? []) as ScheduleRow[]}
+      stopsLast24h={(stops ?? []) as StopRow[]}
+    />
+  );
 }
 
 const router = createBrowserRouter([

@@ -99,5 +99,15 @@ declare module "@databricks/appkit-ui/react" {
           dry_run: boolean;
         }>;
       };
+    stops_last_24h: {
+        name: "stops_last_24h";
+        parameters: Record<string, never>;
+        result: Array<{
+          /** @sqlType STRING */
+          app_name: string;
+          /** @sqlType BIGINT */
+          stop_count: number;
+        }>;
+      };
   }
 }

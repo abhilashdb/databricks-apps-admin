@@ -71,7 +71,12 @@ function configBadges(cfg: ScheduleRow): { label: string; color: string }[] {
   return badges;
 }
 
-export function DashboardPage({ schedule }: { schedule: ScheduleRow[] }) {
+type StopRow = { app_name: string; stop_count: number };
+
+export function DashboardPage({ schedule, stopsLast24h = [] }: {
+  schedule: ScheduleRow[];
+  stopsLast24h?: StopRow[];
+}) {
   const [apps, setApps]               = useState<AppInfo[]>([]);
   const [loading, setLoading]         = useState(true);
   const [runningJob, setRunningJob]   = useState(false);
@@ -94,6 +99,7 @@ export function DashboardPage({ schedule }: { schedule: ScheduleRow[] }) {
   useEffect(() => { fetchApps(); }, []);
 
   const scheduleMap = Object.fromEntries(schedule.map(s => [s.app_name, s]));
+  const stopMap     = Object.fromEntries(stopsLast24h.map(s => [s.app_name, Number(s.stop_count)]));
 
   const runMonitor = async (dryRun: boolean) => {
     setRunningJob(true);
@@ -213,15 +219,22 @@ export function DashboardPage({ schedule }: { schedule: ScheduleRow[] }) {
                     </p>
                   )}
 
-                  {/* Compact footer: telemetry + update time */}
-                  <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
-                    <span className={`flex items-center gap-1 ${app.telemetryEnabled ? 'text-green-600' : 'text-amber-500'}`}>
+                  {/* Compact footer: telemetry + stops + update time */}
+                  <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground gap-2 flex-wrap">
+                    <span className={`flex items-center gap-1 flex-shrink-0 ${app.telemetryEnabled ? 'text-green-600' : 'text-amber-500'}`}>
                       {app.telemetryEnabled
                         ? <><Wifi className="h-3 w-3" /> Telemetry on</>
                         : <><WifiOff className="h-3 w-3" /> No telemetry</>}
                     </span>
+                    {(stopMap[app.name] ?? 0) > 0 && (
+                      <span className="text-orange-600 font-medium flex-shrink-0">
+                        stopped {stopMap[app.name]}× (24h)
+                      </span>
+                    )}
                     {app.updateTime && (
-                      <span title={app.updateTime}>{relativeTime(app.updateTime)}</span>
+                      <span title={app.updateTime} className="ml-auto flex-shrink-0">
+                        {relativeTime(app.updateTime)}
+                      </span>
                     )}
                   </div>
 

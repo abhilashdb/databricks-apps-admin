@@ -47,7 +47,7 @@ let failedRequests: string[] = [];
 
 test('smoke test - app loads and displays dashboard', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('Scale-to-Zero Admin')).toBeVisible();
+  await expect(page.getByText('Databricks Apps Admin')).toBeVisible();
   await expect(page.getByText('App Dashboard')).toBeVisible();
   await expect(page.getByRole('link', { name: /Dashboard/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Events/ })).toBeVisible();
