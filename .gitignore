@@ -1,0 +1,7 @@
+node_modules/
+dist/
+client/dist/
+.smoke-test/
+test-results/
+playwright-report/
+*.bak

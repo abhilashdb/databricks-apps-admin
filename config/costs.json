@@ -1,0 +1,5 @@
+{
+  "dbuRate": 0.75,
+  "currency": "USD",
+  "note": "DBU-to-dollar conversion rate for Databricks Apps serverless compute."
+}
