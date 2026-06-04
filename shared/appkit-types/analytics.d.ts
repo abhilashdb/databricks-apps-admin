@@ -109,5 +109,19 @@ declare module "@databricks/appkit-ui/react" {
           stop_count: number;
         }>;
       };
+    telemetry_status: {
+        name: "telemetry_status";
+        parameters: Record<string, never>;
+        result: Array<{
+          /** @sqlType STRING */
+          app_name: string;
+          /** @sqlType STRING */
+          last_action: string;
+          /** @sqlType STRING */
+          last_reason: string;
+          /** @sqlType TIMESTAMP */
+          last_checked: string;
+        }>;
+      };
   }
 }

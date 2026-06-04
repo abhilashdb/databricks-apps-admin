@@ -4,10 +4,11 @@ import {
   Button, Sheet, SheetContent, SheetHeader, SheetTitle, useIsMobile,
 } from '@databricks/appkit-ui/react';
 import { useAnalyticsQuery } from '@databricks/appkit-ui/react';
-import { Menu, LayoutDashboard, List, Activity, DollarSign } from 'lucide-react';
+import { Menu, LayoutDashboard, List, Activity, DollarSign, HelpCircle } from 'lucide-react';
 import { DashboardPage } from './pages/DashboardPage';
 import { EventsPage } from './pages/EventsPage';
 import { CostsPage } from './pages/CostsPage';
+import { HelpPage } from './pages/HelpPage';
 
 const navCls = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
@@ -30,6 +31,9 @@ function NavLinks({ linkClass, onClick }: { linkClass: typeof navCls; onClick?: 
       </NavLink>
       <NavLink to="/costs" className={linkClass} onClick={onClick}>
         <DollarSign className="h-4 w-4" /> Costs
+      </NavLink>
+      <NavLink to="/help" className={linkClass} onClick={onClick}>
+        <HelpCircle className="h-4 w-4" /> Help
       </NavLink>
     </nav>
   );
@@ -64,6 +68,9 @@ function Layout() {
                 <NavLink to="/costs" className={mobileNavCls} onClick={() => setOpen(false)}>
                   <DollarSign className="h-4 w-4" /> Costs
                 </NavLink>
+                <NavLink to="/help" className={mobileNavCls} onClick={() => setOpen(false)}>
+                  <HelpCircle className="h-4 w-4" /> Help
+                </NavLink>
               </div>
             </SheetContent>
           </Sheet>
@@ -82,17 +89,31 @@ type ScheduleRow = {
 };
 
 type StopRow = { app_name: string; stop_count: number };
+type TelStatusRow = { app_name: string; last_action: string; last_reason: string; last_checked: string };
+
+const MISSING_ACTIONS = new Set([
+  'skipped_no_otel_config', 'skipped_no_http_instrumentation', 'skipped_no_telemetry',
+]);
 
 function DashboardWrapper() {
   const { data: schedule, loading: schedLoading } = useAnalyticsQuery('app_schedule', {});
-  const { data: stops }                            = useAnalyticsQuery('stops_last_24h', {});
+  const { data: stops }    = useAnalyticsQuery('stops_last_24h', {});
+  const { data: telStatus } = useAnalyticsQuery('telemetry_status', {});
+
   if (schedLoading) {
     return <div className="text-center text-muted-foreground py-16">Loading schedule…</div>;
   }
+
+  const rows = (telStatus ?? []) as TelStatusRow[];
+  const missingCount = rows.filter(r => MISSING_ACTIONS.has(r.last_action)).length;
+  const missingApps  = new Set(rows.filter(r => MISSING_ACTIONS.has(r.last_action)).map(r => r.app_name));
+
   return (
     <DashboardPage
       schedule={(schedule ?? []) as ScheduleRow[]}
       stopsLast24h={(stops ?? []) as StopRow[]}
+      missingTelemetryCount={missingCount}
+      missingTelemetryApps={missingApps}
     />
   );
 }
@@ -104,6 +125,7 @@ const router = createBrowserRouter([
       { path: '/',       element: <DashboardWrapper /> },
       { path: '/events', element: <EventsPage /> },
       { path: '/costs',  element: <CostsPage /> },
+      { path: '/help',   element: <HelpPage /> },
     ],
   },
 ]);

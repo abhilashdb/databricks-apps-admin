@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, Play, RefreshCw, Settings, Wifi, WifiOff } from 'lucide-react';
+import { ExternalLink, Play, RefreshCw, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import {
   Button, Card, CardContent, CardHeader, CardTitle,
 } from '@databricks/appkit-ui/react';
@@ -73,9 +73,11 @@ function configBadges(cfg: ScheduleRow): { label: string; color: string }[] {
 
 type StopRow = { app_name: string; stop_count: number };
 
-export function DashboardPage({ schedule, stopsLast24h = [] }: {
+export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCount = 0, missingTelemetryApps = new Set() }: {
   schedule: ScheduleRow[];
   stopsLast24h?: StopRow[];
+  missingTelemetryCount?: number;
+  missingTelemetryApps?: Set<string>;
 }) {
   const [apps, setApps]               = useState<AppInfo[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -135,6 +137,18 @@ export function DashboardPage({ schedule, stopsLast24h = [] }: {
           </Button>
         </div>
       </div>
+
+      {/* Telemetry missing banner */}
+      {missingTelemetryCount > 0 && (
+        <div className="flex items-start gap-3 p-3.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+          <div>
+            <span className="font-semibold">{missingTelemetryCount} app{missingTelemetryCount !== 1 ? 's' : ''} missing telemetry</span>
+            {' '}— these apps cannot be idle-detected and will not be stopped automatically.
+            {' '}<a href="/help" className="underline hover:text-amber-700">Setup guide →</a>
+          </div>
+        </div>
+      )}
 
       {loading && apps.length === 0 ? (
         <div className="text-center text-muted-foreground py-16">Loading apps…</div>
@@ -221,10 +235,16 @@ export function DashboardPage({ schedule, stopsLast24h = [] }: {
 
                   {/* Compact footer: telemetry + stops + update time */}
                   <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground gap-2 flex-wrap">
-                    <span className={`flex items-center gap-1 flex-shrink-0 ${app.telemetryEnabled ? 'text-green-600' : 'text-amber-500'}`}>
-                      {app.telemetryEnabled
-                        ? <><Wifi className="h-3 w-3" /> Telemetry on</>
-                        : <><WifiOff className="h-3 w-3" /> No telemetry</>}
+                    <span className={`flex items-center gap-1 flex-shrink-0 ${
+                      missingTelemetryApps.has(app.name)
+                        ? 'text-red-600'
+                        : app.telemetryEnabled ? 'text-green-600' : 'text-amber-500'
+                    }`}>
+                      {missingTelemetryApps.has(app.name)
+                        ? <><AlertTriangle className="h-3 w-3" /> Missing instrumentation</>
+                        : app.telemetryEnabled
+                          ? <><Wifi className="h-3 w-3" /> Telemetry on</>
+                          : <><WifiOff className="h-3 w-3" /> No telemetry</>}
                     </span>
                     {(stopMap[app.name] ?? 0) > 0 && (
                       <span className="text-orange-600 font-medium flex-shrink-0">
