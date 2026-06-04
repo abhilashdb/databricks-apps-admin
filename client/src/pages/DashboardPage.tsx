@@ -217,15 +217,13 @@ export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCou
                   {/* Compact footer: telemetry + stops + update time */}
                   <div className="flex items-center justify-between border-t pt-2 text-xs text-muted-foreground gap-2 flex-wrap">
                     <span className={`flex items-center gap-1 flex-shrink-0 ${
-                      missingTelemetryApps.has(app.name)
+                      (missingTelemetryApps.has(app.name) || !app.telemetryEnabled)
                         ? 'text-red-600'
-                        : app.telemetryEnabled ? 'text-green-600' : 'text-amber-500'
+                        : 'text-green-600'
                     }`}>
-                      {missingTelemetryApps.has(app.name)
-                        ? <><AlertTriangle className="h-3 w-3" /> Missing instrumentation</>
-                        : app.telemetryEnabled
-                          ? <><Wifi className="h-3 w-3" /> Telemetry on</>
-                          : <><WifiOff className="h-3 w-3" /> No telemetry</>}
+                      {(missingTelemetryApps.has(app.name) || !app.telemetryEnabled)
+                        ? <><WifiOff className="h-3 w-3" /> No telemetry</>
+                        : <><Wifi className="h-3 w-3" /> Telemetry on</>}
                     </span>
                     {(stopMap[app.name] ?? 0) > 0 && (
                       <span className="text-orange-600 font-medium flex-shrink-0">

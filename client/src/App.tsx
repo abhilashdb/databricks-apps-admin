@@ -91,8 +91,11 @@ type ScheduleRow = {
 type StopRow = { app_name: string; stop_count: number };
 type TelStatusRow = { app_name: string; last_action: string; last_reason: string; last_checked: string };
 
+// All three mean "monitor can't detect traffic" — surface as "No telemetry" to users
 const MISSING_ACTIONS = new Set([
-  'skipped_no_otel_config', 'skipped_no_http_instrumentation', 'skipped_no_telemetry',
+  'skipped_no_otel_config',
+  'skipped_no_http_instrumentation',
+  'skipped_no_telemetry',
 ]);
 
 function DashboardWrapper() {
