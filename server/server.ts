@@ -52,13 +52,20 @@ createApp({
           const telemetry = Array.isArray(appRaw['telemetry_export_destinations'])
             && (appRaw['telemetry_export_destinations'] as unknown[]).length > 0;
 
+          // apps.list() often omits app_status — infer from deployment state
+          const deployState = a.active_deployment?.status?.state?.toString() ?? '';
+          const appState = a.app_status?.state?.toString()
+            ?? (deployState === 'SUCCEEDED' ? 'RUNNING'
+               : deployState === 'FAILED'   ? 'UNAVAILABLE'
+               : deployState);
+
           result.push({
               name:               a.name,
               url:                a.url ?? '',
               computeState:       a.compute_status?.state?.toString() ?? 'UNKNOWN',
               computeMessage:     a.compute_status?.message ?? '',
-              appState:           a.app_status?.state?.toString() ?? '',
-              appMessage:         a.app_status?.message ?? '',
+              appState,
+              appMessage:         a.app_status?.message ?? a.active_deployment?.status?.message ?? '',
               creator:            a.creator ?? '',
               createTime:         a.create_time ?? '',
               updateTime:         a.update_time ?? '',

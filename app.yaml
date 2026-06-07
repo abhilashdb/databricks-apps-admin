@@ -1,4 +1,10 @@
 command: ['npm', 'run', 'start']
+
+# Grant users the sql scope so OBO queries can run against the SQL warehouse.
+# Without this, analytics queries fail with "Invalid scope, required scopes: sql".
+user_api_scopes:
+  - sql
+
 env:
   - name: DATABRICKS_WAREHOUSE_ID
     value: 4eaa1039609f603b
