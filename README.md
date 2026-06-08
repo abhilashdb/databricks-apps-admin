@@ -1,193 +1,52 @@
-# scale-to-zero-admin
+# Databricks Apps Admin
 
-A Databricks App powered by [AppKit](https://www.databricks.com/devhub/docs/appkit/v0/), featuring React, TypeScript, and Tailwind CSS.
+Automated idle detection, shutdown monitoring, and an admin panel for Databricks Apps.
 
-**Enabled plugins:**
-- **Analytics** -- SQL query execution against Databricks SQL Warehouses
-- **Server** -- Express HTTP server with static file serving and Vite dev mode
+## Repository structure
 
-## Prerequisites
+```
+.
+├── install.sh        ← Interactive installer for any workspace
+├── monitoring/       ← Scale-to-zero monitoring job (DABs)
+│   ├── src/scale_to_zero.py
+│   ├── databricks.yml
+│   └── resources/
+└── admin-panel/      ← Admin UI (Databricks AppKit)
+    ├── client/       ← React frontend
+    ├── server/       ← Express + tRPC backend
+    └── config/       ← SQL queries + costs config
+```
 
-- Node.js v22+ and npm
-- Databricks CLI (for deployment)
-- Access to a Databricks workspace
-
-## Databricks Authentication
-
-### Local Development
-
-For local development, configure your environment variables by creating a `.env` file:
+## Quick start
 
 ```bash
-cp .env.example .env
+git clone https://github.com/abhilashdb/databricks-apps-admin
+cd databricks-apps-admin
+./install.sh
 ```
 
-Edit `.env` and set the environment variables you need:
+The installer will prompt for:
+- **Databricks CLI profile** (must be authenticated against the target workspace)
+- **Unity Catalog** name and schema for telemetry tables
+- **Force-stop hour** (stored as local time; default 22 = 10 PM IST)
+- **DBU cost rate** for the cost dashboard (default $0.75/DBU)
 
-```env
-DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
-DATABRICKS_APP_PORT=8000
-# ... other environment variables, depending on the plugins you use
-```
+### Prerequisites
 
-### CLI Authentication
+- [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) installed and authenticated
+- Node.js ≥ 18 (for admin panel build)
 
-The Databricks CLI requires authentication to deploy and manage apps. Configure authentication using one of these methods:
+## What it deploys
 
-#### OAuth U2M
+| Component | Description |
+|---|---|
+| **Monitoring job** | Serverless notebook running every 15 min; stops idle apps, force-stops at configured hour, auto-enables telemetry |
+| **Admin panel** | Databricks AppKit app: live app status, strategy config, cost dashboard, telemetry setup guide |
 
-Interactive browser-based authentication with short-lived tokens:
+## Telemetry
 
-```bash
-databricks auth login --host https://your-workspace.cloud.databricks.com
-```
+The monitor uses `otel_metrics.http.server.duration` for traffic detection. App developers must add `opentelemetry-instrument` to their `app.yaml` — see the **Help** tab in the admin panel for per-framework instructions.
 
-This will open your browser to complete authentication. The CLI saves credentials to `~/.databrickscfg`.
+The monitor auto-configures the Unity Catalog telemetry export destinations on first encounter.
 
-#### Configuration Profiles
-
-Use multiple profiles for different workspaces:
-
-```ini
-[DEFAULT]
-host = https://dev-workspace.cloud.databricks.com
-
-[production]
-host = https://prod-workspace.cloud.databricks.com
-client_id = prod-client-id
-client_secret = prod-client-secret
-```
-
-Deploy using a specific profile:
-
-```bash
-databricks bundle deploy --profile production
-```
-
-**Note:** Personal Access Tokens (PATs) are legacy authentication. OAuth is strongly recommended for better security.
-
-## Getting Started
-
-### Install Dependencies
-
-```bash
-npm install
-```
-
-### Development
-
-Run the app in development mode with hot reload:
-
-```bash
-npm run dev
-```
-
-The app will be available at the URL shown in the console output.
-
-### Build
-
-Build both client and server for production:
-
-```bash
-npm run build
-```
-
-This creates:
-
-- `dist/server.js` - Compiled server bundle
-- `client/dist/` - Bundled client assets
-
-### Production
-
-Run the production build:
-
-```bash
-npm start
-```
-
-## Code Quality
-
-There are a few commands to help you with code quality:
-
-```bash
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
-npm run lint:fix
-
-# Formatting
-npm run format
-npm run format:fix
-```
-
-## Deployment with Databricks Asset Bundles
-
-### 1. Configure Bundle
-
-Update `databricks.yml` with your workspace settings:
-
-```yaml
-targets:
-  default:
-    workspace:
-      host: https://your-workspace.cloud.databricks.com
-```
-
-Make sure to replace all placeholder values in `databricks.yml` with your actual resource IDs.
-
-### 2. Validate Bundle
-
-```bash
-databricks bundle validate
-```
-
-### 3. Deploy
-
-Deploy to the default target:
-
-```bash
-databricks bundle deploy
-```
-
-### 4. Run
-
-Start the deployed app:
-
-```bash
-databricks bundle run <APP_NAME> -t dev
-```
-
-### Deploy to Production
-
-1. Configure the production target in `databricks.yml`
-2. Deploy to production:
-
-```bash
-databricks bundle deploy -t prod
-```
-
-## Project Structure
-
-```
-* client/          # React frontend
-  * src/           # Source code
-  * public/        # Static assets
-* server/          # Express backend
-  * server.ts      # Server entry point
-  * routes/        # Routes
-* shared/          # Shared types
-* config/          # Configuration
-  * queries/       # SQL query files
-* databricks.yml   # Bundle configuration
-* app.yaml         # App configuration
-* .env.example     # Environment variables example
-```
-
-## Tech Stack
-
-- **Backend**: Node.js, Express
-- **Frontend**: React.js, TypeScript, Vite, Tailwind CSS, React Router
-- **UI Components**: Radix UI, shadcn/ui
-- **Databricks**: AppKit SDK
+See [monitoring/README.md](monitoring/README.md) for full documentation.
