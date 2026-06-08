@@ -1,0 +1,4 @@
+command: ['opentelemetry-instrument', 'python', 'app.py']
+env:
+  - name: OTEL_TRACES_SAMPLER
+    value: 'always_on'

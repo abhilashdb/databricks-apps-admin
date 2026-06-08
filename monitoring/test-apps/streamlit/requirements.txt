@@ -1,0 +1,5 @@
+streamlit
+opentelemetry-distro
+opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-instrumentation-tornado
+opentelemetry-instrumentation-system-metrics

@@ -1,0 +1,42 @@
+bundle:
+  name: apps-scale-to-zero
+
+variables:
+  idle_threshold_minutes:
+    default: "30"
+    description: "Minutes of no traffic before stopping an app (default per-app override)"
+  force_stop_hour:
+    default: "22"
+    description: "Local-time hour (0-23) to force-stop all apps. Interpreted in TIMEZONE. Per-app override in app_schedule."
+  timezone:
+    default: "Asia/Kolkata"
+    description: "IANA timezone for force_stop_hour interpretation (e.g. Asia/Kolkata, UTC, America/New_York)"
+  telemetry_catalog:
+    default: "serverless_stable_3rlc3e_catalog"
+    description: "Unity Catalog catalog where app telemetry tables live"
+  telemetry_schema:
+    default: "app_telemetry"
+    description: "UC schema where app telemetry tables live"
+  telemetry_table_prefix:
+    default: ""
+    description: "Optional prefix for otel table names (e.g. 'prod' -> 'prod_otel_logs')"
+  app_filter:
+    default: ""
+    description: "Comma-separated app names to monitor. Empty = monitor all active apps"
+  dry_run:
+    default: "false"
+    description: "Set to 'true' to log what would be stopped without actually stopping"
+  auto_enable_telemetry:
+    default: "true"
+    description: "Auto-configure telemetry on apps that don't have it set up yet"
+
+include:
+  - resources/*.yml
+
+targets:
+  fevm:
+    mode: production
+    workspace:
+      host: https://fevm-serverless-stable-3rlc3e.cloud.databricks.com
+      profile: fevm-serverless-stable-3rlc3e
+      root_path: /Workspace/Users/abhilash.r@databricks.com/.bundle/${bundle.name}/${bundle.target}

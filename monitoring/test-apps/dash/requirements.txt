@@ -1,0 +1,5 @@
+dash
+opentelemetry-distro[otlp]
+opentelemetry-instrumentation-flask
+opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-instrumentation-system-metrics

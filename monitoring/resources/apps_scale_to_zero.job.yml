@@ -1,0 +1,41 @@
+resources:
+  jobs:
+    apps_scale_to_zero:
+      name: apps-scale-to-zero
+
+      # Runs every 15 minutes. Adjust to match your idle_threshold_minutes —
+      # there is no benefit running more frequently than half the threshold.
+      schedule:
+        quartz_cron_expression: "0 0/15 * * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+
+      parameters:
+        - name: idle_threshold_minutes
+          default: ${var.idle_threshold_minutes}
+        - name: force_stop_hour
+          default: ${var.force_stop_hour}
+        - name: telemetry_catalog
+          default: ${var.telemetry_catalog}
+        - name: telemetry_schema
+          default: ${var.telemetry_schema}
+        - name: telemetry_table_prefix
+          default: ${var.telemetry_table_prefix}
+        - name: app_filter
+          default: ${var.app_filter}
+        - name: dry_run
+          default: ${var.dry_run}
+        - name: auto_enable_telemetry
+          default: ${var.auto_enable_telemetry}
+        - name: timezone
+          default: ${var.timezone}
+
+      tasks:
+        - task_key: monitor_and_stop_idle_apps
+          notebook_task:
+            notebook_path: ../src/scale_to_zero.py
+            source: WORKSPACE
+
+      email_notifications:
+        on_failure:
+          - abhilash.r@databricks.com
