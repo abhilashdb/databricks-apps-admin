@@ -1,13 +1,31 @@
 import { createApp, analytics, server, getWorkspaceClient } from '@databricks/appkit';
+import { WorkspaceClient } from '@databricks/sdk-experimental';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Request } from 'express';
 
 const CATALOG = 'serverless_stable_3rlc3e_catalog';
 const SCHEMA  = 'app_telemetry';
 const TABLE   = `${CATALOG}.${SCHEMA}.app_schedule`;
 
-async function sqlExecute(statement: string) {
-  const client      = getWorkspaceClient({});
+// Derive the client type from getWorkspaceClient to avoid duplicate-package type conflicts
+// between the root @databricks/sdk-experimental and the one nested under @databricks/lakebase.
+type WsClient = ReturnType<typeof getWorkspaceClient>;
+
+function oboClient(req: Request): WsClient {
+  const token = req.headers['x-forwarded-access-token'] as string | undefined;
+  if (!token) {
+    if (process.env.NODE_ENV === 'development') return getWorkspaceClient({});
+    throw new Error('Missing x-forwarded-access-token — cannot execute on behalf of user');
+  }
+  // authType: 'pat' prevents the SDK from also picking up DATABRICKS_CLIENT_ID/SECRET from env,
+  // which would cause "more than one authorization method configured" in the app runtime.
+  // Cast needed because new WorkspaceClient() resolves to the root sdk-experimental copy
+  // while WsClient comes from the lakebase-nested copy — structurally identical, different identity.
+  return new WorkspaceClient({ token, authType: 'pat' }) as unknown as WsClient;
+}
+
+async function sqlExecute(client: WsClient, statement: string) {
   const warehouseId = process.env.DATABRICKS_WAREHOUSE_ID;
   if (!warehouseId) throw new Error('DATABRICKS_WAREHOUSE_ID not set');
   const result = await client.statementExecution.executeStatement({
@@ -24,6 +42,7 @@ async function sqlExecute(statement: string) {
 
 createApp({
   plugins: [analytics(), server()],
+  cache: { enabled: false },
 
   async onPluginsReady(appkit) {
     appkit.server.extend((app) => {
@@ -96,7 +115,7 @@ createApp({
           const str  = (v: unknown) => v && typeof v === 'string' ? `'${(v as string).replace(/'/g, "''")}'` : 'NULL';
           const num  = (v: unknown) => typeof v === 'number' ? v : 'NULL';
 
-          await sqlExecute(`
+          await sqlExecute(oboClient(req), `
             UPDATE ${TABLE}
             SET always_on              = ${bool(alwaysOn)},
                 idle_threshold_minutes = ${num(idleThresholdMinutes)},
@@ -106,30 +125,6 @@ createApp({
             WHERE app_name = '${appName}'
           `);
           res.json({ success: true });
-        } catch (e) {
-          res.status(500).json({ error: String(e) });
-        }
-      });
-
-      // ── POST /api/admin/run-monitor ─────────────────────────────────────────
-      // Triggers the scale-to-zero monitor job
-      app.post('/api/admin/run-monitor', async (req, res) => {
-        try {
-          const { dryRun } = req.body as { dryRun?: boolean };
-          const client = getWorkspaceClient({});
-          let jobId: number | undefined;
-          for await (const job of client.jobs.list({})) {
-            if (job.settings?.name === 'apps-scale-to-zero') {
-              jobId = job.job_id;
-              break;
-            }
-          }
-          if (!jobId) throw new Error('apps-scale-to-zero job not found');
-          const run = await client.jobs.runNow({
-            job_id: jobId,
-            job_parameters: { dry_run: dryRun ? 'true' : 'false' },
-          });
-          res.json({ runId: run.run_id });
         } catch (e) {
           res.status(500).json({ error: String(e) });
         }

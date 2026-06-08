@@ -73,11 +73,12 @@ function configBadges(cfg: ScheduleRow): { label: string; color: string }[] {
 
 type StopRow = { app_name: string; stop_count: number };
 
-export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCount = 0, missingTelemetryApps = new Set() }: {
+export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCount = 0, missingTelemetryApps = new Set(), onScheduleSaved }: {
   schedule: ScheduleRow[];
   stopsLast24h?: StopRow[];
   missingTelemetryCount?: number;
   missingTelemetryApps?: Set<string>;
+  onScheduleSaved?: () => void;
 }) {
   const [apps, setApps]               = useState<AppInfo[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -254,7 +255,7 @@ export function DashboardPage({ schedule, stopsLast24h = [], missingTelemetryCou
           appName={editApp}
           current={editingSchedule ?? undefined}
           onClose={() => setEditApp(null)}
-          onSaved={fetchApps}
+          onSaved={() => { fetchApps(); onScheduleSaved?.(); }}
         />
       )}
     </div>

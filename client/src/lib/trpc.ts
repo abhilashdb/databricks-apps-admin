@@ -47,8 +47,4 @@ export const trpc = {
     mutate: (input: UpdateStrategyInput) =>
       post<{ success: boolean }>('update-strategy', input),
   },
-  runMonitor: {
-    mutate: (input: { dryRun: boolean }) =>
-      post<{ runId: number }>('run-monitor', input),
-  },
 };

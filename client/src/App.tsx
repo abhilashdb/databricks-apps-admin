@@ -98,7 +98,9 @@ const MISSING_ACTIONS = new Set([
   'skipped_no_telemetry',
 ]);
 
-function DashboardWrapper() {
+// Inner component is keyed by scheduleKey so React remounts it (re-runs all
+// useAnalyticsQuery calls) whenever a strategy save completes.
+function DashboardQueries({ onScheduleSaved }: { onScheduleSaved: () => void }) {
   const { data: schedule, loading: schedLoading } = useAnalyticsQuery('app_schedule', {});
   const { data: stops }    = useAnalyticsQuery('stops_last_24h', {});
   const { data: telStatus } = useAnalyticsQuery('telemetry_status', {});
@@ -117,6 +119,17 @@ function DashboardWrapper() {
       stopsLast24h={(stops ?? []) as StopRow[]}
       missingTelemetryCount={missingCount}
       missingTelemetryApps={missingApps}
+      onScheduleSaved={onScheduleSaved}
+    />
+  );
+}
+
+function DashboardWrapper() {
+  const [scheduleKey, setScheduleKey] = useState(0);
+  return (
+    <DashboardQueries
+      key={scheduleKey}
+      onScheduleSaved={() => setScheduleKey(k => k + 1)}
     />
   );
 }
