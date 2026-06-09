@@ -283,14 +283,31 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     # Restore SQL files (patched copies were uploaded; restore originals for git cleanliness)
     git checkout -- config/queries/ 2>/dev/null || true
 
-    # Derive the bundle upload path and trigger the app deployment
+    # Derive the bundle upload path
     WS_USER=$($CLI current-user me --output json 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('userName',''))" 2>/dev/null || echo "")
     BUNDLE_PATH="/Workspace/Users/${WS_USER}/.bundle/databricks-apps-admin/default/files"
 
-    echo "  Starting app deployment from $BUNDLE_PATH..."
-    $CLI apps deploy databricks-apps-admin \
-      --source-code-path "$BUNDLE_PATH" 2>&1 | tail -5
+    # Start app compute if stopped — apps deploy requires compute to be ACTIVE
+    echo "  Starting app compute..."
+    env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+      $CLI apps start databricks-apps-admin --profile "$PROFILE" 2>&1 || true
+    echo "  Waiting for compute to become active..."
+    for _i in $(seq 1 36); do
+      _cstate=$(env -u DATABRICKS_HOST -u DATABRICKS_TOKEN \
+        $CLI apps get databricks-apps-admin --profile "$PROFILE" --output json 2>/dev/null \
+        | python3 -c "import sys,json; print(json.load(sys.stdin).get('compute_status',{}).get('state',''))" 2>/dev/null || echo "")
+      if [[ "$_cstate" == "ACTIVE" ]]; then
+        echo "  Compute active."
+        break
+      fi
+      sleep 5
+    done
+
+    echo "  Deploying app from $BUNDLE_PATH..."
+    env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+      $CLI apps deploy databricks-apps-admin \
+      --source-code-path "$BUNDLE_PATH" --profile "$PROFILE" 2>&1 | tail -5
 
     cd "$REPO_ROOT"
   fi
