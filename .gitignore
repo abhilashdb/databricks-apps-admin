@@ -5,3 +5,4 @@ client/dist/
 test-results/
 playwright-report/
 *.bak
+install-trial/
