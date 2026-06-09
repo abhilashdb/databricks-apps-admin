@@ -221,6 +221,14 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     sed -i.bak '/DATABRICKS_WAREHOUSE_ID/{n;s/value: .*/value: '"${WAREHOUSE_ID}"'/;}' app.yaml \
       && rm -f app.yaml.bak
 
+    # Patch SQL query files with install-time catalog/schema
+    for f in config/queries/*.sql; do
+      sed -e "s|{{telemetry_catalog}}|${CATALOG}|g" \
+          -e "s|{{telemetry_schema}}|${SCHEMA}|g" \
+          "$f" > "${f}.patched"
+      mv "${f}.patched" "$f"
+    done
+
     # Install dependencies and generate query types
     echo "  Installing npm dependencies..."
     npm install --silent 2>&1 | tail -2
@@ -236,6 +244,9 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     # Idempotent — safe to re-run.
     echo "  Deploying app bundle (resources + source upload)..."
     $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
+
+    # Restore SQL files (patched copies were uploaded; restore originals for git cleanliness)
+    git checkout -- config/queries/ 2>/dev/null || true
 
     # Derive the bundle upload path and trigger the app deployment
     WS_USER=$($CLI current-user me --output json 2>/dev/null \

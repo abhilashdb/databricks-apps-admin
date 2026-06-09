@@ -5,11 +5,11 @@ SELECT
   e.action                  AS last_action,
   e.reason                  AS last_reason,
   e.event_time              AS last_checked
-FROM serverless_stable_3rlc3e_catalog.app_telemetry.app_schedule s
+FROM {{telemetry_catalog}}.{{telemetry_schema}}.app_schedule s
 LEFT JOIN (
   SELECT app_name, action, reason, event_time,
     ROW_NUMBER() OVER (PARTITION BY app_name ORDER BY event_time DESC) AS rn
-  FROM serverless_stable_3rlc3e_catalog.app_telemetry.app_idle_events
+  FROM {{telemetry_catalog}}.{{telemetry_schema}}.app_idle_events
   WHERE action IN (
     'skipped_no_otel_config',
     'skipped_no_http_instrumentation',

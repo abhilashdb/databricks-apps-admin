@@ -5,6 +5,6 @@ SELECT
   COALESCE(force_stop_hour, 22)                     AS force_stop_hour,
   notes,
   updated_at
-FROM serverless_stable_3rlc3e_catalog.app_telemetry.app_schedule
+FROM {{telemetry_catalog}}.{{telemetry_schema}}.app_schedule
 WHERE app_name IS NOT NULL
 ORDER BY app_name

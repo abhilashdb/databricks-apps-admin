@@ -6,7 +6,7 @@ SELECT
   ROUND(CAST(SUM(u.usage_quantity) AS DOUBLE), 4) AS dbus
 FROM system.billing.usage u
 WHERE u.billing_origin_product = 'APPS'
-  AND u.workspace_id = '7474655891769608'
+  AND u.workspace_id = current_workspace_id()
   AND u.usage_date >= CURRENT_DATE - INTERVAL 30 DAYS
   AND u.usage_metadata.app_name IS NOT NULL
 GROUP BY u.usage_metadata.app_name, u.usage_date
