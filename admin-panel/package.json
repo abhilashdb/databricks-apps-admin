@@ -1,5 +1,5 @@
 {
-  "name": "scale-to-zero-admin",
+  "name": "databricks-apps-admin",
   "version": "1.0.0",
   "main": "dist/server.js",
   "type": "module",

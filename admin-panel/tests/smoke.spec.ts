@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 // ── Templated configuration (resolved by `databricks apps init`) ────────────
 const APP_CONFIG = {
-  name: 'scale-to-zero-admin',
+  name: 'databricks-apps-admin',
   plugins: [
     'analytics',
   ],

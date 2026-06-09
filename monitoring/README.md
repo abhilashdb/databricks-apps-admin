@@ -20,7 +20,7 @@ apps-scale-to-zero/          ← This repo (DABs monitoring job)
   databricks.yml             ← Bundle config
   install.sh                 ← Bootstrap script for new workspaces
 
-scale-to-zero-admin/         ← Admin panel (Databricks AppKit)
+databricks-apps-admin/         ← Admin panel (Databricks AppKit)
   (admin-panel branch)
 ```
 

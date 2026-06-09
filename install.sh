@@ -260,11 +260,11 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
       if grep -q "same name" "$_deploy_log"; then
         echo "  App already exists outside bundle state — deleting and waiting..."
         env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
-          $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --auto-approve 2>&1 || true
+          $CLI apps delete databricks-apps-admin --profile "$PROFILE" --auto-approve 2>&1 || true
         echo "  Waiting for app deletion to complete..."
         for _i in $(seq 1 30); do
           if ! env -u DATABRICKS_HOST -u DATABRICKS_TOKEN \
-               $CLI apps get scale-to-zero-admin --profile "$PROFILE" > /dev/null 2>&1; then
+               $CLI apps get databricks-apps-admin --profile "$PROFILE" > /dev/null 2>&1; then
             echo "  App deleted."
             break
           fi
@@ -286,10 +286,10 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     # Derive the bundle upload path and trigger the app deployment
     WS_USER=$($CLI current-user me --output json 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('userName',''))" 2>/dev/null || echo "")
-    BUNDLE_PATH="/Workspace/Users/${WS_USER}/.bundle/scale-to-zero-admin/default/files"
+    BUNDLE_PATH="/Workspace/Users/${WS_USER}/.bundle/databricks-apps-admin/default/files"
 
     echo "  Starting app deployment from $BUNDLE_PATH..."
-    $CLI apps deploy scale-to-zero-admin \
+    $CLI apps deploy databricks-apps-admin \
       --source-code-path "$BUNDLE_PATH" 2>&1 | tail -5
 
     cd "$REPO_ROOT"
@@ -315,7 +315,7 @@ echo "    • Auto-configure telemetry on apps that don't have it"
 echo "    • Stop idle apps after ${IDLE_MINUTES} min, force-stop at ${FORCE_STOP_HOUR}:00 UTC"
 echo ""
 if [[ "$SKIP_ADMIN" == false ]]; then
-  ADMIN_URL=$($CLI apps get scale-to-zero-admin --output json 2>/dev/null \
+  ADMIN_URL=$($CLI apps get databricks-apps-admin --output json 2>/dev/null \
     | python3 -c "import sys,json; print(json.load(sys.stdin).get('url',''))" 2>/dev/null || echo "")
   [[ -n "$ADMIN_URL" ]] && echo "  Admin panel: $ADMIN_URL" || echo "  Admin panel: check Databricks Apps for the URL"
 fi

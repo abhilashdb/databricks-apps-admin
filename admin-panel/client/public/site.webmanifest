@@ -1,6 +1,6 @@
 {
-  "name": "scale-to-zero-admin",
-  "short_name": "scale-to-zero-admin",
+  "name": "databricks-apps-admin",
+  "short_name": "databricks-apps-admin",
   "icons": [
     {
       "src": "/favicon-192x192.png",

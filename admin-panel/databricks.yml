@@ -1,5 +1,5 @@
 bundle:
-  name: scale-to-zero-admin
+  name: databricks-apps-admin
 
 variables:
   sql_warehouse_id:
@@ -8,7 +8,7 @@ variables:
 resources:
   apps:
     app:
-      name: "scale-to-zero-admin"
+      name: "databricks-apps-admin"
       description: "Admin panel for scale-to-zero app monitoring and strategy management"
       source_code_path: ./
       user_api_scopes:
