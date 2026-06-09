@@ -188,7 +188,8 @@ cat databricks.yml \
 cp databricks.yml databricks.yml.bak
 cp /tmp/databricks_install.yml databricks.yml
 
-$CLI bundle deploy --target default --profile "$PROFILE" 2>&1 || {
+env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+  $CLI bundle deploy --target default --profile "$PROFILE" 2>&1 || {
   echo "  Note: bundle deploy failed — check profile/target configuration."
   cp databricks.yml.bak databricks.yml
   exit 1
@@ -244,15 +245,20 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     # sets user_api_scopes: sql, and registers the warehouse resource grant.
     echo "  Deploying app bundle (resources + source upload)..."
     _deploy_log=$(mktemp)
+    # Unset any workspace env vars so the CLI uses only the --profile for the host.
+    # DATABRICKS_HOST in the shell would otherwise override the profile and hit the wrong workspace.
     set +e
-    $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1 | tee "$_deploy_log"
+    env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+      $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1 | tee "$_deploy_log"
     _deploy_rc=${PIPESTATUS[0]}
     set -e
     if [[ $_deploy_rc -ne 0 ]]; then
-      if grep -q "already exists" "$_deploy_log"; then
+      if grep -q "same name" "$_deploy_log"; then
         echo "  App already exists outside bundle state — deleting and redeploying..."
-        $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --force-stop 2>&1 || true
-        $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
+        env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+          $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --force-stop 2>&1 || true
+        env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
+          $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
       else
         echo "  Bundle deploy failed — see output above."
         rm -f "$_deploy_log"
