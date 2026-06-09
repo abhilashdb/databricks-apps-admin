@@ -180,7 +180,7 @@ cat databricks.yml \
 cp databricks.yml databricks.yml.bak
 cp /tmp/databricks_install.yml databricks.yml
 
-$CLI bundle deploy --target fevm --profile "$PROFILE" 2>&1 || {
+$CLI bundle deploy --target default --profile "$PROFILE" 2>&1 || {
   echo "  Note: bundle deploy failed — check profile/target configuration."
   cp databricks.yml.bak databricks.yml
   exit 1
@@ -218,7 +218,10 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     npm install --silent 2>&1 | tail -2
 
     echo "  Generating query types..."
-    npm run typegen 2>&1 | tail -3
+    npm run typegen 2>&1 | tail -3 || echo "  Warning: typegen failed — using committed types, continuing."
+
+    echo "  Building app..."
+    npm run build 2>&1 | tail -3
 
     # bundle deploy: uploads source files, creates/updates the app resource,
     # sets user_api_scopes: sql, and registers the warehouse resource grant.

@@ -34,9 +34,6 @@ include:
   - resources/*.yml
 
 targets:
-  fevm:
+  default:
     mode: production
-    workspace:
-      host: https://fevm-serverless-stable-3rlc3e.cloud.databricks.com
-      profile: fevm-serverless-stable-3rlc3e
-      root_path: /Workspace/Users/abhilash.r@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    # host and root_path are derived from the --profile passed to bundle deploy
