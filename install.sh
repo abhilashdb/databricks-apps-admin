@@ -161,18 +161,19 @@ if [[ "$DRY_RUN" == true ]]; then
   exit 0
 fi
 
-# ── Step 1: Create telemetry schema ──────────────────────────────────────────
+# ── Steps 1 + 2: Telemetry schema + monitoring job ───────────────────────────
 echo ""
+if [[ "$SKIP_JOB" == true ]]; then
+  echo "▶ Steps 1–2/4 — Telemetry schema and monitoring job skipped."
+else
+
 echo "▶ Step 1/4 — Creating telemetry schema ${CATALOG}.${SCHEMA}..."
 $CLI api post /api/2.0/sql/statements \
   --json "{\"warehouse_id\":\"${WAREHOUSE_ID}\",\"statement\":\"CREATE SCHEMA IF NOT EXISTS \`${CATALOG}\`.\`${SCHEMA}\`\",\"wait_timeout\":\"30s\"}" \
   > /dev/null 2>&1 && echo "  Schema ready." || echo "  Warning: schema creation returned an error (may already exist)."
 
-# ── Step 2: Deploy monitoring job ─────────────────────────────────────────────
 echo ""
-if [[ "$SKIP_JOB" == true ]]; then
-  echo "▶ Step 2/4 — Monitoring job skipped."
-else
+echo "▶ Step 2/4 — Deploying scale-to-zero monitoring job..."
 echo "▶ Step 2/4 — Deploying scale-to-zero monitoring job..."
 cd "$MONITORING_DIR"
 
