@@ -258,9 +258,18 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     set -e
     if [[ $_deploy_rc -ne 0 ]]; then
       if grep -q "same name" "$_deploy_log"; then
-        echo "  App already exists outside bundle state — deleting and redeploying..."
+        echo "  App already exists outside bundle state — deleting and waiting..."
         env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
           $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --auto-approve 2>&1 || true
+        echo "  Waiting for app deletion to complete..."
+        for _i in $(seq 1 30); do
+          if ! env -u DATABRICKS_HOST -u DATABRICKS_TOKEN \
+               $CLI apps get scale-to-zero-admin --profile "$PROFILE" > /dev/null 2>&1; then
+            echo "  App deleted."
+            break
+          fi
+          sleep 5
+        done
         env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
           $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
       else
