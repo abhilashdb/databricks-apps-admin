@@ -35,7 +35,11 @@ resources:
           notebook_task:
             notebook_path: ../src/scale_to_zero.py
             source: WORKSPACE
+          # Serverless compute — always has the latest SDK, no runtime pinning needed.
+          # Remove this line to use the workspace default cluster type instead.
+          environment_key: serverless
 
-      email_notifications:
-        on_failure:
-          - abhilash.r@databricks.com
+      environments:
+        - environment_key: serverless
+          spec:
+            client: "1"

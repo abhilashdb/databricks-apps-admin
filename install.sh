@@ -94,6 +94,9 @@ FORCE_STOP_HOUR=$(prompt FORCE_STOP_HOUR "Force-stop hour (0-23 UTC)" "22")
 IDLE_MINUTES=$(prompt IDLE_MINUTES       "Idle threshold (minutes)  " "30")
 DBU_RATE=$(prompt DBU_RATE              "DBU cost rate (\$/DBU)     " "0.75")
 
+SKIP_JOB_INPUT=$(prompt_yn "Deploy monitoring job? (y/n)" "y")
+[[ "$SKIP_JOB_INPUT" =~ ^[Nn] ]] && SKIP_JOB=true || SKIP_JOB=false
+
 if [[ "$SKIP_ADMIN_PREREQ" == "false" ]]; then
   SKIP_ADMIN_INPUT=$(prompt_yn "Deploy admin panel? (y/n)" "y")
   [[ "$SKIP_ADMIN_INPUT" =~ ^[Nn] ]] && SKIP_ADMIN=true || SKIP_ADMIN=false
@@ -119,7 +122,8 @@ echo "  Telemetry schema : $SCHEMA"
 echo "  Force stop hour  : ${FORCE_STOP_HOUR}:00 UTC"
 echo "  Idle threshold   : ${IDLE_MINUTES} minutes"
 echo "  DBU rate         : \$${DBU_RATE}/DBU"
-echo "  Deploy admin app : $( [[ "$SKIP_ADMIN" == true ]] && echo "no" || echo "yes" )"
+echo "  Deploy job       : $( [[ "$SKIP_JOB"   == true ]] && echo "no (skip)" || echo "yes" )
+  Deploy admin app : $( [[ "$SKIP_ADMIN" == true ]] && echo "no (skip)" || echo "yes" )"
 echo "  Dry run          : $DRY_RUN"
 echo ""
 
@@ -166,6 +170,9 @@ $CLI api post /api/2.0/sql/statements \
 
 # ── Step 2: Deploy monitoring job ─────────────────────────────────────────────
 echo ""
+if [[ "$SKIP_JOB" == true ]]; then
+  echo "▶ Step 2/4 — Monitoring job skipped."
+else
 echo "▶ Step 2/4 — Deploying scale-to-zero monitoring job..."
 cd "$MONITORING_DIR"
 
@@ -189,6 +196,7 @@ cp databricks.yml.bak databricks.yml
 rm -f /tmp/databricks_install.yml databricks.yml.bak
 
 echo "  Monitoring job deployed."
+fi  # SKIP_JOB
 
 # ── Step 3: Deploy admin panel ────────────────────────────────────────────────
 if [[ "$SKIP_ADMIN" == false ]]; then
