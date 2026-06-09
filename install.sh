@@ -186,6 +186,7 @@ cat databricks.yml \
 
 cp databricks.yml databricks.yml.bak
 cp /tmp/databricks_install.yml databricks.yml
+rm -rf .databricks/
 
 env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
   $CLI bundle deploy --target default --profile "$PROFILE" 2>&1 || {
@@ -239,6 +240,10 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
 
     echo "  Building app..."
     npm run build 2>&1 | tail -3
+
+    # Wipe any stale Terraform state — it encodes the old workspace URL and will
+    # route API calls to the wrong workspace even when --profile is correct.
+    rm -rf .databricks/
 
     # bundle deploy: uploads source files, creates/updates the app resource,
     # sets user_api_scopes: sql, and registers the warehouse resource grant.
