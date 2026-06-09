@@ -241,9 +241,20 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
 
     # bundle deploy: uploads source files, creates/updates the app resource,
     # sets user_api_scopes: sql, and registers the warehouse resource grant.
-    # Idempotent — safe to re-run.
     echo "  Deploying app bundle (resources + source upload)..."
-    $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
+    _deploy_out=$($CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1)
+    _deploy_rc=$?
+    echo "$_deploy_out"
+    if [[ $_deploy_rc -ne 0 ]]; then
+      if echo "$_deploy_out" | grep -q "already exists"; then
+        echo "  App already exists outside bundle state — deleting and redeploying..."
+        $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --force-stop 2>&1 || true
+        $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
+      else
+        echo "  Bundle deploy failed — see output above."
+        exit 1
+      fi
+    fi
 
     # Restore SQL files (patched copies were uploaded; restore originals for git cleanliness)
     git checkout -- config/queries/ 2>/dev/null || true
