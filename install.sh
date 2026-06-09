@@ -174,7 +174,6 @@ $CLI api post /api/2.0/sql/statements \
 
 echo ""
 echo "▶ Step 2/4 — Deploying scale-to-zero monitoring job..."
-echo "▶ Step 2/4 — Deploying scale-to-zero monitoring job..."
 cd "$MONITORING_DIR"
 
 # Patch databricks.yml variables with install-time values
@@ -256,7 +255,7 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
       if grep -q "same name" "$_deploy_log"; then
         echo "  App already exists outside bundle state — deleting and redeploying..."
         env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
-          $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --force-stop 2>&1 || true
+          $CLI apps delete scale-to-zero-admin --profile "$PROFILE" --auto-approve 2>&1 || true
         env -u DATABRICKS_HOST -u DATABRICKS_TOKEN -u DATABRICKS_CLIENT_ID -u DATABRICKS_CLIENT_SECRET \
           $CLI bundle deploy --profile "$PROFILE" --var sql_warehouse_id="${WAREHOUSE_ID}" 2>&1
       else
