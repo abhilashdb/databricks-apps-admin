@@ -36,4 +36,7 @@ include:
 targets:
   default:
     mode: production
-    # host and root_path are derived from the --profile passed to bundle deploy
+    workspace:
+      # host comes from --profile; root_path is user-scoped so each installer
+      # gets their own copy and doesn't overwrite anyone else's deployment.
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
