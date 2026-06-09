@@ -219,9 +219,12 @@ with open('config/costs.json','w') as f: json.dump(cfg, f, indent=2)
 print('  DBU rate set to \$${DBU_RATE}/DBU')
 "
 
-    # Patch DATABRICKS_WAREHOUSE_ID env var in app.yaml
-    sed -i.bak '/DATABRICKS_WAREHOUSE_ID/{n;s/value: .*/value: '"${WAREHOUSE_ID}"'/;}' app.yaml \
-      && rm -f app.yaml.bak
+    # Patch placeholder values in app.yaml
+    sed -i.bak \
+      -e "s|value: WAREHOUSE_ID_PLACEHOLDER|value: ${WAREHOUSE_ID}|" \
+      -e "s|value: TELEMETRY_CATALOG_PLACEHOLDER|value: ${CATALOG}|" \
+      -e "s|value: TELEMETRY_SCHEMA_PLACEHOLDER|value: ${SCHEMA}|" \
+      app.yaml && rm -f app.yaml.bak
 
     # Patch SQL query files with install-time catalog/schema
     for f in config/queries/*.sql; do
@@ -280,8 +283,8 @@ print('  DBU rate set to \$${DBU_RATE}/DBU')
     fi
     rm -f "$_deploy_log"
 
-    # Restore SQL files (patched copies were uploaded; restore originals for git cleanliness)
-    git checkout -- config/queries/ 2>/dev/null || true
+    # Restore patched files (uploaded copies are in workspace; restore originals for git cleanliness)
+    git checkout -- config/queries/ app.yaml 2>/dev/null || true
 
     # Derive the bundle upload path
     WS_USER=$($CLI current-user me --output json 2>/dev/null \

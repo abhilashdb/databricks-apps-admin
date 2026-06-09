@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Request } from 'express';
 
-const CATALOG = 'serverless_stable_3rlc3e_catalog';
-const SCHEMA  = 'app_telemetry';
+const CATALOG = process.env.TELEMETRY_CATALOG ?? 'main';
+const SCHEMA  = process.env.TELEMETRY_SCHEMA  ?? 'app_telemetry';
 const TABLE   = `${CATALOG}.${SCHEMA}.app_schedule`;
 
 // Derive the client type from getWorkspaceClient to avoid duplicate-package type conflicts
