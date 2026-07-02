@@ -78,15 +78,72 @@ w = WorkspaceClient()
 # Calls the Apps Update API (PATCH /api/2.0/apps/{name}) when an app is
 # found without telemetry configured, using the default catalog/schema.
 # ---------------------------------------------------------------------------
+def _get_app_raw(app_name: str) -> dict:
+    """Fetch the app's full current config as a raw dict.
+
+    telemetry_export_destinations (and possibly other fields) aren't in the
+    SDK's typed model yet, so we go through the raw API response rather than
+    the typed App object — this also gives us `resources` etc. to preserve
+    on PATCH, since the Apps Update API replaces fields wholesale rather
+    than merging them.
+    """
+    try:
+        return w.api_client.do("GET", f"/api/2.0/apps/{app_name}")
+    except AttributeError:
+        # Fallback for older SDK: use dbutils notebook context to get a token
+        import json, urllib.request
+        ctx   = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
+        token = ctx.apiToken().getOrElse(None)
+        host  = ctx.apiUrl().getOrElse(None)
+        if not token or not host:
+            raise RuntimeError("Cannot get API token from notebook context")
+        req = urllib.request.Request(
+            f"{host}/api/2.0/apps/{app_name}",
+            headers={"Authorization": f"Bearer {token}"},
+            method="GET",
+        )
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+
+
 def _enable_telemetry(app_name: str) -> bool:
-    """Configure telemetry export on an app that doesn't have it set up yet."""
+    """Configure telemetry export on an app that doesn't have it set up yet.
+
+    Checks the app's current config first — PATCH /api/2.0/apps/{name} is a
+    full-field replace, not a merge, so blindly sending only
+    telemetry_export_destinations on every idle run (when metrics still
+    haven't shown up, e.g. because opentelemetry-instrument isn't wired into
+    app.yaml yet) would silently wipe out other fields such as `resources`
+    (SQL warehouse / secret bindings) on every 15-minute tick.
+    """
+    try:
+        current = _get_app_raw(app_name)
+    except Exception as err:
+        print(f"  Warning: could not fetch current app config: {err}")
+        return False
+
+    if current.get("telemetry_export_destinations"):
+        print(f"  Telemetry already configured on '{app_name}' — skipping "
+              f"(metrics likely absent because the app isn't instrumented yet)")
+        return True
+
     if DRY_RUN:
         print(f"  [DRY RUN] Would enable telemetry on '{app_name}' "
               f"→ {TELEMETRY_CATALOG}.{TELEMETRY_SCHEMA}")
         return False  # don't actually configure in dry-run
 
     _p = f"{TELEMETRY_PREFIX}_" if TELEMETRY_PREFIX else ""
+    # Preserve the app's other mutable fields — the update API replaces the
+    # whole object rather than merging, so omitting `resources` (SQL
+    # warehouse / secret bindings) etc. here would silently clear them.
+    # Only carry over known-mutable fields; skip server-computed ones
+    # (id, url, compute_status, active_deployment, ...) that PATCH doesn't
+    # expect to receive back.
     payload = {
+        k: current[k] for k in ("description", "resources", "user_api_scopes")
+        if current.get(k) is not None
+    }
+    payload.update({
         "telemetry_export_destinations": [{
             "unity_catalog": {
                 "logs_table":    f"{TELEMETRY_CATALOG}.{TELEMETRY_SCHEMA}.{_p}otel_logs",
@@ -94,7 +151,7 @@ def _enable_telemetry(app_name: str) -> bool:
                 "traces_table":  f"{TELEMETRY_CATALOG}.{TELEMETRY_SCHEMA}.{_p}otel_traces",
             }
         }]
-    }
+    })
     try:
         # Prefer the SDK API client (works in all recent SDK versions)
         w.api_client.do("PATCH", f"/api/2.0/apps/{app_name}", body=payload)

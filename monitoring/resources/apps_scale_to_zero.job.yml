@@ -35,7 +35,6 @@ resources:
           notebook_task:
             notebook_path: ../src/scale_to_zero.py
             source: WORKSPACE
-          # Serverless compute — always has the latest SDK, no runtime pinning needed.
           # Remove this line to use the workspace default cluster type instead.
           environment_key: serverless
 
@@ -43,3 +42,7 @@ resources:
         - environment_key: serverless
           spec:
             client: "1"
+            # Serverless's preinstalled databricks-sdk can be old enough to be
+            # missing AppsAPI.list() — pin explicitly rather than relying on it.
+            dependencies:
+              - databricks-sdk>=0.40.0
